@@ -10,3 +10,6 @@ window.addEventListener('DOMContentLoaded', () => {
     replaceText(`${type}-version`, process.versions[type])
   }
 })
+
+window.ipcRenderer = require('electron').ipcRenderer;
+var alpine = require('alpinejs');
