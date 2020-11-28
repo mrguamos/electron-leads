@@ -285,7 +285,7 @@ async function uploadFiles(filenames, event) {
           //do nothing
         } else {
           let fileName = f.substring(f.lastIndexOf("/") + 1, f.length)
-          let lead = Leads.build({ companyName: row.values[1], contactNo: row.values[2], email: row.values[3], fileName: fileName });
+          let lead = Leads.build({ companyName: row.values[1], contactNo: row.values[3], email: row.values[4], fileName: fileName });
           await lead.save();
         }
 
