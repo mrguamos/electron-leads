@@ -1,10 +1,10 @@
 function scrape() {
     return {
         tab: 'yellow-pages',
-        location: '',
-        name: '',
-        fromPage: 1,
-        toPage: 1,
+        location: 'Australian Capital Territory',
+        name: 'Aircon technician',
+        fromPage: 3,
+        toPage: 4,
         scrape() {
             let arg = {
                 name: this.name,
@@ -20,6 +20,9 @@ function scrape() {
             document
                 .querySelector('#scrape').disabled = true
             window.ipcRenderer.send('scrape', arg)
+        },
+        showDialog() {
+            window.ipcRenderer.send('showDialog')
         }
     }
 }
@@ -46,5 +49,9 @@ ipcRenderer.on('pagenum', (event, arg) => {
 })
 
 ipcRenderer.on('page-reply', (event, arg) => {
+    alert(arg)
+})
+
+ipcRenderer.on('upload-reply', (event, arg) => {
     alert(arg)
 })

@@ -12,4 +12,4 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 window.ipcRenderer = require('electron').ipcRenderer;
-var alpine = require('alpinejs');
+window.alpine = require('alpinejs');

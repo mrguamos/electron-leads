@@ -6,17 +6,19 @@ const Excel = require('exceljs')
 const home = require("os").homedir();
 const fs = require('fs');
 const dir = home + '/leads';
-const { Sequelize, Model, DataTypes } = require('sequelize');
+const { Sequelize, Model, DataTypes, Op, QueryTypes } = require('sequelize');
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: dir + "/leads.sqlite" // or ':memory:'
+  storage: dir + "/leads.sqlite", // or ':memory:'
+  //logging: false,
 });
-
+const dialog = require('electron').dialog;
 class Leads extends Model { }
 Leads.init({
   companyName: DataTypes.STRING,
   contactNo: DataTypes.NUMBER,
   email: DataTypes.STRING,
+  fileName: DataTypes.STRING
 }, { sequelize, modelName: 'leads' });
 
 
@@ -81,8 +83,6 @@ ipcMain.on('scrape', async (event, arg) => {
       event.reply('pagenum', arg.fromPage)
       if (arg.tab === 'yellow-pages')
         reply = await scrapeYellowPages(arg)
-      else if (arg.tab === 'seek')
-        reply = await scrapeSeek(arg)
 
       arg.fromPage = Number(arg.fromPage) + 1
 
@@ -104,31 +104,69 @@ ipcMain.on('scrape', async (event, arg) => {
         { header: 'Contact Number', key: 'contactNo' },
         { header: 'Company Email', key: 'email' },
       ]
-    } else if (arg.tab === 'seek') {
-      worksheet.columns = [
-        { header: 'Company Name', key: 'companyName' },
-        { header: 'Company Email', key: 'email' },
-        { header: 'Contact Person', key: 'contactPerson' },
-      ]
     }
 
     worksheet.columns.forEach(column => {
       column.width = 50
     })
-    replies = Array.from(new Set(replies));
+
+
 
     worksheet.getRow(1).font = { bold: true }
+
+    let leads = [];
+
     if (arg.tab === 'yellow-pages') {
       replies.forEach((r, i) => {
         r.companyNames.forEach((companyName, index) => {
-          worksheet.addRow({ companyName: companyName, contactNo: r.contactNos[index], email: r.emails[index] });
+          let lead = {
+            companyName: companyName,
+            contactNo: r.contactNos[index],
+            email: r.emails[index]
+          }
+          leads.push(lead);
         })
       })
-    } else if (arg.tab === 'seek') {
+
+      leads.forEach(l => {
+        leads.push({
+          companyName: l.companyName + "addon",
+          contactNo: l.contactNo,
+          email: l.email
+        })
+      })
+
+      leads = leads.filter((v, i, self) => {
+        return self.findIndex(me => {
+          let isCompanyNameMatched = me.companyName === v.companyName;
+          let isContactNoMatched = false
+          let isEmailMatched = false;
+          if (me.contactNo !== 'N/A')
+            isContactNoMatched = me.contactNo === v.contactNo;
+          if (me.email !== 'N/A')
+            isEmailMatched = me.email === v.email;
+          return (isCompanyNameMatched || isContactNoMatched || isEmailMatched)
+        }) === i
+      })
+
+
+      await Promise.all(leads.map(async (lead, index) => {
+
+
+
+        let res = await Leads.findAll({
+          where: Sequelize.or({ 'companyName': lead.companyName },
+            lead.contactNo === 'N/A' ? null : { 'contactNo': lead.contactNo },
+            lead.email === 'N/A' ? null : { 'email': lead.email })
+        })
+
+        if (res === undefined || res.length == 0) {
+          worksheet.addRow({ companyName: lead.companyName, contactNo: lead.contactNo, email: lead.email });
+        }
+      }));
 
     }
-
-    workbook.xlsx.writeFile(home + '/leads/' + arg.name + "-" + arg.location + ".xlsx")
+    await workbook.xlsx.writeFile(home + '/leads/' + arg.name + "-" + arg.location + ".xlsx");
   } catch (error) {
     console.log(error)
     event.reply('scrape-reply', error)
@@ -148,6 +186,8 @@ const args = [
   `--window-size=${resolution.x},${resolution.y}`,
   '--no-sandbox',
 ]
+
+
 
 function getChromiumExecPath() {
   return puppeteer.executablePath().replace('app.asar', 'app.asar.unpacked');
@@ -225,38 +265,37 @@ async function scrapeYellowPages(arg) {
   return data
 }
 
-async function scrapeSeek(arg) {
-  const browser = await puppeteer.launch({ executablePath: getChromiumExecPath(), headless: false, defaultViewport: null, args: args })
-  const pages = await browser.pages()
-  const page = pages[0]
-  // await page.setViewport({ width: resolution.x, height: resolution.y });
-  // await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36');
-  await page.goto(`https://www.seek.com.au/${arg.name}-jobs/in-${arg.location}?page=${arg.fromPage}`);
-
-  const div = await page.$('._3MPUOLE');
-
-  const jobTitles = await div.$$("[data-automation='jobTitle']");
-  let i = 1;
-  var forEachPromise = new Promise((resolve, reject) => {
-    jobTitles.forEach(async (jobTitle, index, array) => {
-      let url = await jobTitle.evaluate(element => {
-        return element.getAttribute('href');
-      })
-      const jobPage = await browser.newPage();
-      await jobPage.goto("https://www.seek.com.au/" + url);
-      await jobPage.bringToFront();
-
-      let companyName = await jobPage.$eval("[data-automation='advertiser-name']", span => {
-        return span.innerText;
-      })
-      await jobPage.close();
-      if (index === array.length - 1) resolve();
-    })
+ipcMain.on('showDialog', async (event, arg) => {
+  dialog.showOpenDialog({ properties: ['openFile', 'openDirectory', 'multiSelections'], filters: [{ name: 'CSV', extensions: ['csv'] }] }).then(async res => {
+    await uploadFiles(res.filePaths, event);
+    event.reply('upload-reply', 'Done')
   });
 
+})
 
-  let data = null
-  await forEachPromise
-  await browser.close();
-  return data
+async function uploadFiles(filenames, event) {
+
+  filenames.forEach(async f => {
+    try {
+      let workbook = new Excel.Workbook();
+      await workbook.csv.readFile(f);
+      const worksheet = workbook.getWorksheet(1);
+      worksheet.eachRow(async (row, rowNumber) => {
+        if (rowNumber === 1) {
+          //do nothing
+        } else {
+          let fileName = f.substring(f.lastIndexOf("/") + 1, f.length)
+          let lead = Leads.build({ companyName: row.values[1], contactNo: row.values[2], email: row.values[3], fileName: fileName });
+          await lead.save();
+        }
+
+      })
+    } catch (error) {
+      event.reply('upload-reply', error)
+    }
+
+
+  })
+
+
 }

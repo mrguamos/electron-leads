@@ -22,12 +22,13 @@
             Pages</a>
         </li>
         <li class="mr-3">
-          <a @click="tab = 'seek'"
+          <a @click="tab = 'crm'"
             class="inline-block border border-white rounded hover:border-gray-200 text-blue-500 hover:bg-gray-200 py-1 px-3"
-            href="#">Seek</a>
+            href="#">CRM</a>
         </li>
       </ul>
     </div>
+
     <div class="flex justify-center items-center pt-10">
       <form class="w-full max-w-sm" x-show="tab === 'yellow-pages'">
         <div class="flex justify-center mb-6"><label>Yellow Pages</label></div>
@@ -114,88 +115,19 @@
         </div>
       </form>
 
+      <form class="w-full max-w-sm" x-show="tab === 'crm'">
+        <div class="flex justify-center mb-6"><label>CRM</label></div>
+        <div class="md:flex md:items-center mb-6">
+          <div class="flex w-full  items-center justify-center bg-grey-lighter" @click="showDialog()">
+            <label
+              class="w-64 flex flex-col items-center px-4 py-6 bg-white text-blue-500 rounded-lg shadow-lg tracking-wide uppercase border border-blue cursor-pointer hover:bg-blue-400 hover:text-white">
+              <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path
+                  d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
+              </svg>
+              <span class="mt-2 text-base leading-normal">Upload file</span>
 
-      <form class="w-full max-w-sm" x-show="tab === 'seek'">
-        <div class="flex justify-center mb-6"><label>Seek</label></div>
-        <div class="md:flex md:items-center mb-6">
-          <div class="md:w-1/3">
-            <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="pagenum">
-              Page Number
             </label>
-          </div>
-          <div class="md:w-2/3">
-            <span id="pagenum"></span>
-          </div>
-        </div>
-        <div class="md:flex md:items-center mb-6">
-          <div class="md:w-1/3">
-            <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="what">
-              What
-            </label>
-          </div>
-          <div class="md:w-2/3">
-            <input x-model="name"
-              class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-              id="clue" placeholder="What" type="text">
-          </div>
-        </div>
-        <div class="md:flex md:items-center mb-6">
-          <div class="md:w-1/3">
-            <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="where">
-              Where
-            </label>
-          </div>
-          <div class="md:w-2/3">
-            <input x-model="location"
-              class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-              id="location-clue" type="text" placeholder="Where">
-          </div>
-        </div>
-        <div class="md:flex md:items-center mb-6">
-          <div class="md:w-1/3">
-            <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="from-page">
-              From Page
-            </label>
-          </div>
-          <div class="md:w-2/3">
-            <input
-              class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-              id="from-page" type="number" placeholder="Page" value="1" min="1">
-          </div>
-        </div>
-        <div class="md:flex md:items-center mb-6">
-          <div class="md:w-1/3">
-            <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="to-page">
-              To Page
-            </label>
-          </div>
-          <div class="md:w-2/3">
-            <input
-              class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-              id="to-page" type="number" placeholder="Page" value="1" min="1">
-          </div>
-        </div>
-        <div class="md:flex md:items-center">
-          <div class="md:w-1/3"></div>
-          <div class="md:w-2/3 ">
-            <div class="inline-flex rounded-md shadow-sm">
-              <button type="button" id="scrape" @click="scrape()"
-                class="disabled:opacity-50 inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150">
-                <svg id="loader" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none"
-                  viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                  </path>
-                </svg>
-                Start
-              </button>
-              <button type="button" id="stop"
-                class="ml-2 inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700 transition ease-in-out duration-150">
-                Stop
-              </button>
-            </div>
-
           </div>
         </div>
       </form>
